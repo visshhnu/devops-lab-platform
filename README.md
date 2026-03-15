@@ -1,228 +1,169 @@
-# DevOps Lab Platform
+# DevOps GitOps Platform Lab 
 
-A local **DevOps platform** built using Kubernetes, Docker, WSL2, and
-ArgoCD for learning modern DevOps and GitOps workflows.
+This repository demonstrates a **production-style DevOps platform** built using Kubernetes, GitOps principles, and automated container deployments.
 
-This repository documents the full setup of a **local DevOps
-environment** that simulates a real internal engineering platform used
-by DevOps teams.
+The platform deploys a **Python Flask microservice** across multiple environments (**dev, stage, prod**) using **ArgoCD** for GitOps-based continuous delivery.
 
-------------------------------------------------------------------------
+---
 
-## Architecture Overview
+# Architecture Overview
 
-    Windows Host
-       │
-    WSL2 Ubuntu
-       │
-    Docker Desktop
-       │
-    k3d Kubernetes Cluster
-       │
-    Traefik Ingress Controller
-       │
-    ArgoCD GitOps Platform
-       │
-    Applications / Microservices
+Developer → GitHub  
+│  
+│ push code  
+▼  
+Docker Build  
+│  
+▼  
+DockerHub Registry  
+│  
+▼  
+ArgoCD (GitOps)  
+│  
+▼  
+Kubernetes (k3d Cluster)  
+│  
+├── Dev Environment  
+├── Stage Environment  
+└── Prod Environment  
 
-------------------------------------------------------------------------
+---
 
-## Core Components
+# Technology Stack
 
-  Component            Purpose
-  -------------------- --------------------------------------------------
-  **WSL2 Ubuntu**      Linux development environment on Windows
-  **Docker Desktop**   Container runtime
-  **k3d**              Lightweight Kubernetes cluster running in Docker
-  **Kubernetes**       Container orchestration
-  **Traefik**          Ingress controller for routing traffic
-  **ArgoCD**           GitOps continuous deployment platform
+| Component | Tool |
+|--------|--------|
+| Container Runtime | Docker |
+| Container Registry | DockerHub |
+| Kubernetes | k3d |
+| GitOps Deployment | ArgoCD |
+| Ingress Controller | NGINX Ingress |
+| Application | Python Flask |
+| Version Control | GitHub |
 
-------------------------------------------------------------------------
+---
 
-## Local Domain Access
+# Repository Structure
 
-Services can be accessed using custom local domains instead of localhost
-ports.
+devops-lab-platform
+├── apps
+│   ├── app.py
+│   ├── Dockerfile
+│   └── requirements.txt
+│
+├── kubernetes
+│   └── python-pipeline
+│        ├── argocd
+│        ├── dev
+│        ├── stage
+│        └── prod
+│
+├── cluster
+│   └── create-k3d-cluster.sh
+│
+├── docs
+│   └── setup-guide.md
+│
+├── scripts
+└── tests
 
-Example:
+---
 
-  Service   URL
-  --------- --------------------------------
-  ArgoCD    http://argocd.devops-lab.local
+# Environment URLs
 
-------------------------------------------------------------------------
+| Service | URL |
+|------|------|
+| ArgoCD UI | http://argocd.devops-lab.local |
+| Python Dev | http://python.dev.devops-lab.local |
+| Python Stage | http://python.stage.devops-lab.local |
+| Python Prod | http://python.prod.devops-lab.local |
 
-## Prerequisites
+---
 
-Before setting up the platform install:
+# Local DNS Configuration
 
--   Windows 11
--   WSL2
--   Ubuntu 24.04
--   Docker Desktop
--   kubectl
--   k3d
--   git
+Add the following entries to your hosts file.
 
-------------------------------------------------------------------------
+Windows:
 
-## Step 1: Create Kubernetes Cluster
-
-Create the cluster using k3d.
-
-``` bash
-k3d cluster create devops-lab -p "80:80@loadbalancer" -p "443:443@loadbalancer"
-```
-
-Verify cluster:
-
-``` bash
-kubectl get nodes
-```
-
-------------------------------------------------------------------------
-
-## Step 2: Install ArgoCD
-
-Create namespace:
-
-``` bash
-kubectl create namespace argocd
-```
-
-Install ArgoCD:
-
-``` bash
-kubectl apply -n argocd -f https://raw.githubusercontent.com/argoproj/argo-cd/stable/manifests/install.yaml
-```
-
-Verify installation:
-
-``` bash
-kubectl get pods -n argocd
-```
-
-------------------------------------------------------------------------
-
-## Step 3: Configure ArgoCD Ingress
-
-Create file:
-
-    kubernetes/argocd/argocd-ingress.yaml
-
-Example configuration:
-
-``` yaml
-apiVersion: networking.k8s.io/v1
-kind: Ingress
-metadata:
-  name: argocd
-  namespace: argocd
-spec:
-  ingressClassName: traefik
-  rules:
-  - host: argocd.devops-lab.local
-    http:
-      paths:
-      - path: /
-        pathType: Prefix
-        backend:
-          service:
-            name: argocd-server
-            port:
-              number: 80
-```
-
-Apply configuration:
-
-``` bash
-kubectl apply -f kubernetes/argocd/argocd-ingress.yaml
-```
-
-------------------------------------------------------------------------
-
-## Step 4: Configure Local DNS
-
-Edit the Windows hosts file:
-
-    C:\Windows\System32\drivers\etc\hosts
+C:\Windows\System32\drivers\etc\hosts
 
 Add:
 
-    127.0.0.1 argocd.devops-lab.local
+127.0.0.1 argocd.devops-lab.local  
+127.0.0.1 python.dev.devops-lab.local  
+127.0.0.1 python.stage.devops-lab.local  
+127.0.0.1 python.prod.devops-lab.local  
 
-------------------------------------------------------------------------
+---
 
-## Step 5: Access ArgoCD
+# Container Image
 
-Open browser:
+Docker images are stored in DockerHub:
 
-    http://argocd.devops-lab.local
+docker.io/visshhnu/python-pipeline
 
-Get admin password:
+Example tags:
 
-``` bash
-kubectl -n argocd get secret argocd-initial-admin-secret -o jsonpath="{.data.password}" | base64 -d
-```
+docker.io/visshhnu/python-pipeline:dev  
+docker.io/visshhnu/python-pipeline:stage  
+docker.io/visshhnu/python-pipeline:prod  
 
-Login credentials:
+---
 
-    username: admin
-    password: <generated-password>
+# GitOps Workflow
 
-------------------------------------------------------------------------
+1. Developer pushes code to GitHub
+2. Docker image is built and pushed to DockerHub
+3. Kubernetes manifests are updated
+4. ArgoCD detects changes in Git
+5. ArgoCD automatically synchronizes the Kubernetes cluster
 
-## Repository Structure
+---
 
-    devops-lab-platform
-    │
-    ├── README.md
-    ├── docs
-    │   ├── setup.md
-    │   └── troubleshooting.md
-    │
-    ├── cluster
-    │   └── create-cluster.sh
-    │
-    ├── kubernetes
-    │   ├── argocd
-    │   │   ├── install.yaml
-    │   │   └── argocd-ingress.yaml
-    │   │
-    │   └── apps
-    │       └── nginx-demo.yaml
-    │
-    └── scripts
-        ├── install-tools.sh
-        └── cleanup.sh
+# Environment Setup
 
-------------------------------------------------------------------------
+Create k3d cluster
 
-## Future Improvements
+./cluster/create-k3d-cluster.sh
 
-Planned extensions for the platform:
+Install NGINX Ingress
 
--   GitLab CI/CD
--   Harbor Container Registry
--   Prometheus Monitoring
--   Grafana Dashboards
--   AI Application Deployment
+kubectl apply -f https://raw.githubusercontent.com/kubernetes/ingress-nginx/main/deploy/static/provider/cloud/deploy.yaml
 
-------------------------------------------------------------------------
+Install ArgoCD
 
-## Purpose of this Project
+kubectl create namespace argocd  
+kubectl apply -n argocd -f kubernetes/python-pipeline/argocd/install-argocd.yaml
 
-This repository serves as:
+Deploy Dev Application
 
--   A **DevOps learning lab**
--   A **GitOps platform example**
--   A **Kubernetes practice environment**
--   A **portfolio project for DevOps engineering roles**
+kubectl apply -f kubernetes/python-pipeline/argocd/python-pipeline-dev-app.yaml
 
-------------------------------------------------------------------------
+---
 
-## Author
+# Testing
 
-DevOps Lab Platform --- personal infrastructure project for learning
-DevOps, Kubernetes, and GitOps.
+kubectl get pods -n python-pipeline
+
+curl http://python.dev.devops-lab.local
+
+Expected:
+
+Welcome to the micro-services demo!
+
+---
+
+# Future Enhancements
+
+• GitHub Actions CI/CD pipeline  
+• Prometheus monitoring  
+• Grafana dashboards  
+• Loki logging  
+• Helm charts  
+
+---
+
+# Author
+
+DevOps GitOps Lab by **visshhnu**
