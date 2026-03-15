@@ -1,0 +1,20 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: python-pipeline-dev
+  namespace: argocd
+spec:
+  project: default
+  source:
+    repoURL: https://github.com/visshhnu/devops-lab-platform.git
+    targetRevision: main
+    path: kubernetes/python-pipeline/dev
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: python-pipeline
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
