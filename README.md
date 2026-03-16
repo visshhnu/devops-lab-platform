@@ -46,6 +46,7 @@ Kubernetes (k3d Cluster)
 # Repository Structure
 
 devops-lab-platform
+│
 ├── apps
 │   ├── app.py
 │   ├── Dockerfile
@@ -54,9 +55,21 @@ devops-lab-platform
 ├── kubernetes
 │   └── python-pipeline
 │        ├── argocd
+│        │     ├── python-pipeline-dev-app.yaml
+│        │     ├── python-pipeline-stage-app.yaml
+│        │     └── python-pipeline-prod-app.yaml
+│        │
 │        ├── dev
+│        │     ├── python-pipeline-deployment.yaml
+│        │     └── python-pipeline-namespace.yaml
+│        │
 │        ├── stage
+│        │     ├── python-pipeline-deployment.yaml
+│        │     └── python-pipeline-namespace.yaml
+│        │
 │        └── prod
+│              ├── python-pipeline-deployment.yaml
+│              └── python-pipeline-namespace.yaml
 │
 ├── cluster
 │   └── create-k3d-cluster.sh
@@ -65,7 +78,9 @@ devops-lab-platform
 │   └── setup-guide.md
 │
 ├── scripts
+│
 └── tests
+    └── test_app.py
 
 ---
 
